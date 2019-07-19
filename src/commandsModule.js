@@ -4,7 +4,7 @@ import {
   vtkInteractorStyleMPRSlice,
   vtkSVGCrosshairsWidget,
   vtkSVGWidgetManager,
-} from 'react-vtkjs-viewport';
+} from './viewport';
 
 import setMPRLayout from './utils/setMPRLayout.js';
 import setViewportToVTK from './utils/setViewportToVTK.js';
