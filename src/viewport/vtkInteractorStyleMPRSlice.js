@@ -1,6 +1,5 @@
-// Temporarily using a modified version of this interactor to deal with a camera subscription issue
 import macro from 'vtk.js/Sources/macro';
-import vtkMath from 'vtk.js/Sources/Common/Core/Math';
+import * as vtkMath from 'vtk.js/Sources/Common/Core/Math';
 import vtkMatrixBuilder from 'vtk.js/Sources/Common/Core/MatrixBuilder';
 import vtkInteractorStyleManipulator from 'vtk.js/Sources/Interaction/Style/InteractorStyleManipulator';
 import vtkMouseCameraTrackballRotateManipulator from 'vtk.js/Sources/Interaction/Manipulators/MouseCameraTrackballRotateManipulator';
@@ -91,34 +90,51 @@ function vtkInteractorStyleMPRSlice(publicAPI, model) {
     updateScrollManipulator();
   }
 
+  let interactorSub;
   const superSetInteractor = publicAPI.setInteractor;
   publicAPI.setInteractor = interactor => {
     superSetInteractor(interactor);
+
+    if (cameraSub) {
+      cameraSub.unsubscribe();
+      cameraSub = null;
+    }
+
+    if (interactorSub) {
+      interactorSub.unsubscribe();
+      interactorSub = null;
+    }
+
     if (interactor) {
       const renderer = interactor.getCurrentRenderer();
       const camera = renderer.getActiveCamera();
-
-      if (cameraSub) {
-        cameraSub.unsubscribe();
-      }
 
       cameraSub = camera.onModified(() => {
         updateScrollManipulator();
         publicAPI.modified();
       });
-    } else {
-      // TODO: This is the modified part!
-      if (cameraSub) {
-        cameraSub.unsubscribe();
-      }
+
+      interactorSub = interactor.onAnimation(() => {
+        const { slabThickness } = model;
+
+        const dist = camera.getDistance();
+        const near = dist - slabThickness / 2;
+        const far = dist + slabThickness / 2;
+
+        camera.setClippingRange(near, far);
+      });
     }
   };
 
   publicAPI.handleMouseMove = macro.chain(publicAPI.handleMouseMove, () => {
     const renderer = model.interactor.getCurrentRenderer();
+    const { slabThickness } = model;
     const camera = renderer.getActiveCamera();
     const dist = camera.getDistance();
-    camera.setClippingRange(dist, dist + 1);
+    const near = dist - slabThickness / 2;
+    const far = dist + slabThickness / 2;
+
+    camera.setClippingRange(near, far);
   });
 
   const superSetVolumeMapper = publicAPI.setVolumeMapper;
@@ -129,6 +145,10 @@ function vtkInteractorStyleMPRSlice(publicAPI, model) {
       if (mapper) {
         // prevent zoom manipulator from messing with our focal point
         camera.setFreezeFocalPoint(true);
+
+        // NOTE: Disabling this because it makes it more difficult to switch
+        // interactor styles. Need to find a better way to do this!
+        //publicAPI.setSliceNormal(...publicAPI.getSliceNormal());
       } else {
         camera.setFreezeFocalPoint(false);
       }
@@ -291,16 +311,35 @@ function vtkInteractorStyleMPRSlice(publicAPI, model) {
       const viewUp = [0, 1, 0];
       transform.apply(viewUp);
 
+      const { slabThickness } = model;
+
       camera.setPosition(...cameraPos);
       camera.setDistance(dist);
       // should be set after pos and distance
       camera.setDirectionOfProjection(...normal);
       camera.setViewUp(...viewUp);
       camera.setViewAngle(angle);
-      camera.setClippingRange(dist, dist + 0.1);
+      camera.setClippingRange(
+        dist - slabThickness / 2,
+        dist + slabThickness / 2
+      );
 
       publicAPI.setCenterOfRotation(center);
     }
+  };
+
+  publicAPI.setSlabThickness = slabThickness => {
+    model.slabThickness = slabThickness;
+
+    // Update the camera clipping range if the slab
+    // thickness property is changed
+    const renderer = model.interactor.getCurrentRenderer();
+    const camera = renderer.getActiveCamera();
+    const dist = camera.getDistance();
+    const near = dist - slabThickness / 2;
+    const far = dist + slabThickness / 2;
+
+    camera.setClippingRange(near, far);
   };
 
   setManipulators();
@@ -310,7 +349,9 @@ function vtkInteractorStyleMPRSlice(publicAPI, model) {
 // Object factory
 // ----------------------------------------------------------------------------
 
-const DEFAULT_VALUES = {};
+const DEFAULT_VALUES = {
+  slabThickness: 0.1,
+};
 
 // ----------------------------------------------------------------------------
 
@@ -321,6 +362,7 @@ export function extend(publicAPI, model, initialValues = {}) {
   vtkInteractorStyleManipulator.extend(publicAPI, model, initialValues);
 
   macro.setGet(publicAPI, model, ['volumeMapper']);
+  macro.get(publicAPI, model, ['slabThickness']);
 
   // Object specific methods
   vtkInteractorStyleMPRSlice(publicAPI, model);
