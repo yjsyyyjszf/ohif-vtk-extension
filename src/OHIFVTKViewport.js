@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import getImageData from './lib/getImageData';
 import loadImageData from './lib/loadImageData';
 
@@ -13,13 +13,13 @@ import vtkImageData from 'vtk.js/Sources/Common/DataModel/ImageData';
 import vtkVolume from 'vtk.js/Sources/Rendering/Core/Volume';
 import vtkVolumeMapper from 'vtk.js/Sources/Rendering/Core/VolumeMapper';
 
-const { StackManager } = OHIF.utils;
+const {StackManager} = OHIF.utils;
 
 // Metadata configuration
 const metadataProvider = new OHIF.cornerstone.MetadataProvider();
 
 cornerstone.metaData.addProvider(
-    metadataProvider.provider.bind(metadataProvider),
+    metadataProvider.provider.bind(metadataProvider)
 );
 
 StackManager.setMetadataProvider(metadataProvider);
@@ -31,7 +31,7 @@ const SOP_CLASSES = {
 const specialCaseHandlers = {};
 specialCaseHandlers[
     SOP_CLASSES.SEGMENTATION_STORAGE
-    ] = handleSegmentationStorage;
+] = handleSegmentationStorage;
 
 // TODO: Figure out where we plan to put this long term
 const volumeCache = {};
@@ -43,7 +43,7 @@ const volumeCache = {};
  */
 function createLabelMapImageData(backgroundImageData) {
     const labelMapData = vtkImageData.newInstance(
-        backgroundImageData.get('spacing', 'origin', 'direction'),
+        backgroundImageData.get('spacing', 'origin', 'direction')
     );
     labelMapData.setDimensions(backgroundImageData.getDimensions());
     labelMapData.computeTransforms();
@@ -88,11 +88,11 @@ class OHIFVTKViewport extends Component {
         studyInstanceUid,
         displaySetInstanceUid,
         sopInstanceUid,
-        frameIndex,
+        frameIndex
     ) {
         // Create shortcut to displaySet
         const study = studies.find(
-            study => study.studyInstanceUid === studyInstanceUid,
+            study => study.studyInstanceUid === studyInstanceUid
         );
 
         const displaySet = study.displaySets.find(set => {
@@ -111,7 +111,7 @@ class OHIFVTKViewport extends Component {
             const index = stack.imageIds.findIndex(imageId => {
                 const sopCommonModule = cornerstone.metaData.get(
                     'sopCommonModule',
-                    imageId,
+                    imageId
                 );
                 if (!sopCommonModule) {
                     return;
@@ -136,7 +136,7 @@ class OHIFVTKViewport extends Component {
         displaySetInstanceUid,
         sopClassUid,
         sopInstanceUid,
-        frameIndex,
+        frameIndex
     ) => {
         const stack = OHIFVTKViewport.getCornerstoneStack(
             studies,
@@ -144,7 +144,7 @@ class OHIFVTKViewport extends Component {
             displaySetInstanceUid,
             sopClassUid,
             sopInstanceUid,
-            frameIndex,
+            frameIndex
         );
 
         let imageDataObject;
@@ -156,7 +156,7 @@ class OHIFVTKViewport extends Component {
 
                 const data = handleSegmentationStorage(
                     stack.imageIds,
-                    displaySetInstanceUid,
+                    displaySetInstanceUid
                 );
 
                 imageDataObject = data.referenceDataObject;
@@ -169,7 +169,10 @@ class OHIFVTKViewport extends Component {
                     };
                 });
             default:
-                imageDataObject = getImageData(stack.imageIds, displaySetInstanceUid);
+                imageDataObject = getImageData(
+                    stack.imageIds,
+                    displaySetInstanceUid
+                );
 
                 return loadImageData(imageDataObject).then(() => {
                     return {
@@ -196,8 +199,8 @@ class OHIFVTKViewport extends Component {
             Math.sqrt(
                 data
                     .getSpacing()
-                    .map((v) => v * v)
-                    .reduce((a, b) => a + b, 0),
+                    .map(v => v * v)
+                    .reduce((a, b) => a + b, 0)
             );
 
         volumeMapper.setSampleDistance(sampleDistance);
@@ -208,7 +211,7 @@ class OHIFVTKViewport extends Component {
     }
 
     async setStateFromProps() {
-        const { studies, displaySet } = this.props.viewportData;
+        const {studies, displaySet} = this.props.viewportData;
         const {
             studyInstanceUid,
             displaySetInstanceUid,
@@ -219,19 +222,19 @@ class OHIFVTKViewport extends Component {
 
         if (sopClassUids.length > 1) {
             console.warn(
-                'More than one SOPClassUid in the same series is not yet supported.',
+                'More than one SOPClassUid in the same series is not yet supported.'
             );
         }
 
         const sopClassUid = sopClassUids[0];
 
-        let { data, labelmap } = await this.getViewportData(
+        let {data, labelmap} = await this.getViewportData(
             studies,
             studyInstanceUid,
             displaySetInstanceUid,
             sopClassUid,
             sopInstanceUid,
-            frameIndex,
+            frameIndex
         );
 
         if (!labelmap) {
@@ -252,12 +255,12 @@ class OHIFVTKViewport extends Component {
     }
 
     componentDidUpdate(prevProps) {
-        const { studies, displaySet } = this.props.viewportData;
+        const {studies, displaySet} = this.props.viewportData;
         const prevDisplaySet = prevProps.viewportData.displaySet;
 
         if (
             displaySet.displaySetInstanceUid !==
-            prevDisplaySet.displaySetInstanceUid ||
+                prevDisplaySet.displaySetInstanceUid ||
             displaySet.sopInstanceUid !== prevDisplaySet.sopInstanceUid ||
             displaySet.frameIndex !== prevDisplaySet.frameIndex
         ) {
@@ -278,7 +281,7 @@ class OHIFVTKViewport extends Component {
             });
         }
 
-        const style = { width: '100%', height: '100%', position: 'relative' };
+        const style = {width: '100%', height: '100%', position: 'relative'};
 
         return (
             <>
@@ -295,7 +298,7 @@ class OHIFVTKViewport extends Component {
                     />
                 ) : (
                     <div style={style}>
-                        <LoadingIndicator/>
+                        <LoadingIndicator />
                     </div>
                 )}
                 {childrenWithProps}
