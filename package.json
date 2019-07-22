@@ -1,6 +1,6 @@
 {
   "name": "ohif-vtk-extension",
-  "version": "0.1.52",
+  "version": "0.1.53",
   "description": "OHIF extension for VTK.js",
   "author": "OHIF",
   "contributor": "TungLT",
