@@ -5,20 +5,21 @@ import View2D from './viewport/View2D';
 const { setViewportActive, setViewportSpecificData } = OHIF.redux.actions;
 
 const mapStateToProps = (state, ownProps) => {
+    const { extensions, viewports } = state;
     let dataFromStore;
 
-    if (state.extensions && state.extensions.vtk) {
-        dataFromStore = state.extensions.vtk;
+    if (extensions && extensions.vtk) {
+        dataFromStore = extensions.vtk;
     }
 
     // If this is the active viewport, enable prefetching.
     const { viewportIndex } = ownProps;
-    const isActive = viewportIndex === state.viewports.activeViewportIndex;
-    const viewportLayout = state.viewports.layout.viewports[viewportIndex];
+    const isActive = viewportIndex === viewports.activeViewportIndex;
+    const viewportLayout = viewports.layout.viewports[viewportIndex];
     const pluginDetails = viewportLayout.vtk || {};
 
     return {
-        layout: state.viewports.layout,
+        layout: viewports.layout,
         isActive,
         ...pluginDetails,
         // Hopefully this doesn't break anything under the hood for this one
@@ -74,7 +75,7 @@ const mergeProps = (propsFromState, propsFromDispatch, ownProps) => {
 const ConnectedVTKViewport = connect(
     mapStateToProps,
     mapDispatchToProps,
-    mergeProps,
+    mergeProps
 )(View2D);
 
 export default ConnectedVTKViewport;
